@@ -1,5 +1,7 @@
 import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+
 import { CartContext } from "../context/CartContext";
 import { AuthContext } from "../context/AuthContext";
 import { OrderContext } from "../context/OrderContext";
@@ -13,25 +15,6 @@ export default function Checkout() {
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-
-  /* ================= BLOCK EMPTY CART ================= */
-  if (!cartItems || cartItems.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-black">
-        <div className="text-center">
-          <p className="mb-4 text-gray-600 dark:text-gray-400">
-            Your cart is empty
-          </p>
-          <button
-            onClick={() => navigate("/")}
-            className="px-6 py-2 bg-black text-white rounded-lg"
-          >
-            Go Shopping
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   /* ================= ADDRESS ================= */
   const [address, setAddress] = useState({
@@ -61,7 +44,7 @@ export default function Checkout() {
   const shipping = subtotal > 0 ? 99 : 0;
   const total = subtotal + shipping;
 
-  /* ================= VALIDATION ================= */
+  /* ================= VALIDATIONS ================= */
   const addressValid =
     address.fullName &&
     address.phone &&
@@ -70,53 +53,67 @@ export default function Checkout() {
     address.state &&
     address.pincode;
 
+  const upiValid = upiId && upiId.includes("@");
+
+  const cardValid =
+    card.number.replace(/\s/g, "").length === 16 &&
+    card.name &&
+    /^\d{2}\/\d{2}$/.test(card.expiry) &&
+    card.cvv.length === 3;
+
   const paymentValid =
     paymentMethod === "COD" ||
-    (paymentMethod === "UPI" && upiId.trim()) ||
-    (paymentMethod === "CARD" &&
-      card.number &&
-      card.name &&
-      card.expiry &&
-      card.cvv);
+    (paymentMethod === "UPI" && upiValid) ||
+    (paymentMethod === "CARD" && cardValid);
+
+  /* ================= HELPERS ================= */
+  const formatCardNumber = (v) =>
+    v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
+
+  const formatExpiry = (v) => {
+    const c = v.replace(/\D/g, "").slice(0, 4);
+    if (c.length <= 2) return c;
+    return `${c.slice(0, 2)}/${c.slice(2)}`;
+  };
 
   /* ================= PLACE ORDER ================= */
   const handlePlaceOrder = async () => {
-    if (!user || !cartItems.length) return;
+    if (!user) {
+      toast.error("Please login to place order");
+      return;
+    }
 
     try {
       setLoading(true);
-
       const order = await placeOrder(
         cartItems,
         total,
         address,
         paymentMethod
       );
-
       clearCart();
-
+      toast.success("Order placed successfully");
       navigate("/order-success", {
         state: { orderId: order.id },
         replace: true,
       });
-    } catch (err) {
-      console.error("Order failed", err);
-      alert("Failed to place order");
+    } catch {
+      toast.error("Order failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gradient-to-b dark:from-slate-900 dark:to-black text-gray-900 dark:text-white">
-      <div className="max-w-6xl mx-auto px-4 py-10">
+    <div className="min-h-screen bg-gray-100 dark:bg-slate-950 px-4 py-10">
+      <div className="max-w-6xl mx-auto">
 
         {/* ================= STEPS ================= */}
-        <div className="flex justify-center gap-6 mb-10">
+        <div className="flex justify-center gap-4 mb-10">
           {[1, 2, 3].map((n) => (
             <div
               key={n}
-              className={`w-9 h-9 rounded-full flex items-center justify-center font-semibold
+              className={`w-9 h-9 flex items-center justify-center rounded-full font-semibold
                 ${
                   step === n
                     ? "bg-blue-600 text-white"
@@ -131,14 +128,12 @@ export default function Checkout() {
         <div className="grid md:grid-cols-3 gap-8">
 
           {/* ================= LEFT ================= */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 space-y-6">
 
-            {/* STEP 1 : ADDRESS */}
+            {/* STEP 1 */}
             {step === 1 && (
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow">
-                <h2 className="text-lg font-semibold mb-6">
-                  Delivery Address
-                </h2>
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow">
+                <h2 className="font-semibold mb-6">Delivery Address</h2>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <input
@@ -159,7 +154,7 @@ export default function Checkout() {
 
                 <input
                   className="checkout-input mt-4"
-                  placeholder="Street / Area"
+                  placeholder="Street"
                   onChange={(e) =>
                     setAddress({ ...address, street: e.target.value })
                   }
@@ -193,7 +188,7 @@ export default function Checkout() {
                   <button
                     disabled={!addressValid}
                     onClick={() => setStep(2)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
+                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     Continue
                   </button>
@@ -201,30 +196,96 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* STEP 2 : PAYMENT */}
+            {/* STEP 2 */}
             {step === 2 && (
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow">
-                <h2 className="text-lg font-semibold mb-6">
-                  Payment Method
-                </h2>
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow">
+                <h2 className="font-semibold mb-6">Payment Method</h2>
 
-                {[
-                  ["COD", "Cash on Delivery"],
-                  ["UPI", "UPI (Demo)"],
-                  ["CARD", "Credit / Debit Card"],
-                ].map(([value, label]) => (
-                  <label
-                    key={value}
-                    className="flex justify-between items-center border rounded p-4 mb-3 cursor-pointer"
-                  >
-                    <span>{label}</span>
+                {/* COD */}
+                <label className="block border rounded-xl p-4 mb-4 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={paymentMethod === "COD"}
+                    onChange={() => setPaymentMethod("COD")}
+                  />{" "}
+                  Cash on Delivery
+                </label>
+
+                {/* UPI */}
+                <label className="block border rounded-xl p-4 mb-4 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={paymentMethod === "UPI"}
+                    onChange={() => setPaymentMethod("UPI")}
+                  />{" "}
+                  UPI (Demo)
+
+                  {paymentMethod === "UPI" && (
                     <input
-                      type="radio"
-                      name="payment"
-                      onChange={() => setPaymentMethod(value)}
+                      className="checkout-input mt-4"
+                      placeholder="example@upi"
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
                     />
-                  </label>
-                ))}
+                  )}
+                </label>
+
+                {/* CARD */}
+                <label className="block border rounded-xl p-4 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={paymentMethod === "CARD"}
+                    onChange={() => setPaymentMethod("CARD")}
+                  />{" "}
+                  Credit / Debit Card
+
+                  {paymentMethod === "CARD" && (
+                    <div className="grid md:grid-cols-2 gap-4 mt-4">
+                      <input
+                        className="checkout-input"
+                        placeholder="Card Number"
+                        value={card.number}
+                        onChange={(e) =>
+                          setCard({
+                            ...card,
+                            number: formatCardNumber(e.target.value),
+                          })
+                        }
+                      />
+                      <input
+                        className="checkout-input"
+                        placeholder="Name on Card"
+                        value={card.name}
+                        onChange={(e) =>
+                          setCard({ ...card, name: e.target.value })
+                        }
+                      />
+                      <input
+                        className="checkout-input"
+                        placeholder="MM/YY"
+                        value={card.expiry}
+                        onChange={(e) =>
+                          setCard({
+                            ...card,
+                            expiry: formatExpiry(e.target.value),
+                          })
+                        }
+                      />
+                      <input
+                        className="checkout-input"
+                        placeholder="CVV"
+                        maxLength={3}
+                        value={card.cvv}
+                        onChange={(e) =>
+                          setCard({
+                            ...card,
+                            cvv: e.target.value.replace(/\D/g, ""),
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </label>
 
                 <div className="flex justify-between mt-6">
                   <button
@@ -236,7 +297,7 @@ export default function Checkout() {
                   <button
                     disabled={!paymentValid}
                     onClick={() => setStep(3)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
+                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     Continue
                   </button>
@@ -244,49 +305,44 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* STEP 3 : REVIEW */}
-    {/* STEP 3 : REVIEW */}
-{step === 3 && (
-  <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow">
-    <h2 className="text-lg font-semibold mb-4">
-      Review Order
-    </h2>
+            {/* STEP 3 */}
+            {step === 3 && (
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow">
+                <h2 className="font-semibold mb-4">Review Order</h2>
 
-    {cartItems.map((item) => (
-      <div
-        key={item.id}
-        className="flex justify-between py-3 border-b"
-      >
-        <span>
-          {item.name} × {item.qty || 1}
-        </span>
-        <span>₹ {item.price}</span>
-      </div>
-    ))}
+                {cartItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex justify-between py-2 border-b"
+                  >
+                    <span>
+                      {item.name} × {item.qty || 1}
+                    </span>
+                    <span>₹ {item.price}</span>
+                  </div>
+                ))}
 
-    <div className="flex justify-between mt-6">
-      <button
-        onClick={() => setStep(2)}
-        className="px-4 py-2 border rounded"
-      >
-        Back
-      </button>
-
-      <button
-        onClick={handlePlaceOrder}
-        disabled={loading}
-        className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-60"
-      >
-        {loading ? "Placing Order..." : "Place Order"}
-      </button>
-    </div>
-  </div>
-)}
-
+                <div className="flex justify-between mt-6">
+                  <button
+                    onClick={() => setStep(2)}
+                    className="px-4 py-2 border rounded"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handlePlaceOrder}
+                    disabled={loading}
+                    className="px-6 py-2 bg-green-600 text-white rounded disabled:opacity-60"
+                  >
+                    {loading ? "Placing Order..." : "Place Order"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ================= SUMMARY ================= */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 h-fit shadow">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 h-fit shadow">
             <h3 className="font-semibold mb-4">Order Summary</h3>
             <div className="flex justify-between mb-2">
               <span>Subtotal</span>
@@ -302,7 +358,6 @@ export default function Checkout() {
               <span>₹ {total}</span>
             </div>
           </div>
-
         </div>
       </div>
     </div>

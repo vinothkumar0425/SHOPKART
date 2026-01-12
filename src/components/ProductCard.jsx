@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -18,6 +18,7 @@ export default function ProductCard({ product }) {
     <div
       className="
         group
+        relative overflow-hidden
         bg-white dark:bg-slate-900
         rounded-2xl p-5
         shadow
@@ -34,11 +35,12 @@ export default function ProductCard({ product }) {
           );
         }}
         className="
-          absolute top-4 right-4 text-xl
-          transition-transform duration-200
+          absolute top-4 right-4 z-10
+          text-xl
+          transition-all duration-200
           hover:scale-125
-          text-gray-400
-          hover:text-red-500
+          text-gray-400 hover:text-red-500
+          opacity-0 group-hover:opacity-100
         "
       >
         ♥

@@ -30,8 +30,8 @@
 
 /* Dark mode */
 .dark {
-  --bg-page: #020617;       /* slate-950 */
-  --bg-card: #0f172a;       /* slate-900 */
+  --bg-page: #020617; /* slate-950 */
+  --bg-card: #0f172a; /* slate-900 */
 
   --text-main: #f8fafc;
   --text-sub: #cbd5f5;
@@ -89,21 +89,6 @@ header {
   z-index: 50;
 }
 
-.nav-item {
-  font-weight: 500;
-  color: var(--text-sub);
-  transition: color 0.2s ease;
-}
-
-.nav-item:hover {
-  color: var(--text-main);
-}
-
-.nav-active {
-  color: #2563eb !important;
-  font-weight: 700;
-}
-
 /* =====================================================
    CARDS
 ===================================================== */
@@ -113,22 +98,6 @@ header {
   border-radius: 18px;
   padding: 16px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
-}
-
-/* =====================================================
-   BUTTONS
-===================================================== */
-.btn {
-  @apply px-5 py-2 rounded-xl font-semibold transition;
-}
-
-.btn-primary {
-  @apply btn bg-black text-white hover:bg-gray-900 active:scale-95;
-}
-
-.btn-outline {
-  @apply btn border border-gray-300 dark:border-slate-700
-         hover:bg-gray-100 dark:hover:bg-slate-800;
 }
 
 /* =====================================================
@@ -172,30 +141,35 @@ textarea:focus {
   color: var(--text-muted);
 }
 
-.checkout-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5);
-}
-
 /* =====================================================
-   TOAST (CLEAN & RESPONSIVE)
+   🔥 TOAST – FINAL FIX (IMPORTANT)
 ===================================================== */
+
+/* Highest priority */
 .react-hot-toast {
   z-index: 99999 !important;
 }
 
-[role="status"] {
+/* Wrapper div (this is the missing piece) */
+.react-hot-toast > div {
   background: var(--toast-bg) !important;
   color: var(--toast-text) !important;
-  border: 1px solid var(--toast-border);
-  border-radius: 14px;
-  animation: toast-in 0.35s ease-out;
+  border: 1px solid var(--toast-border) !important;
+  border-radius: 14px !important;
+  padding: 12px 16px !important;
+  font-weight: 500;
 }
 
-/* Toast animation */
+/* Inner role element */
+[role="status"] {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* Animation */
 @keyframes toast-in {
   from {
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(18px) scale(0.95);
     opacity: 0;
   }
   to {
@@ -204,7 +178,11 @@ textarea:focus {
   }
 }
 
-/* Mobile toast */
+.react-hot-toast > div {
+  animation: toast-in 0.3s ease-out;
+}
+
+/* Mobile position */
 @media (max-width: 640px) {
   .react-hot-toast {
     top: auto !important;
