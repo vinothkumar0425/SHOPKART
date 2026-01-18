@@ -44,7 +44,7 @@ export default function Checkout() {
   const shipping = subtotal > 0 ? 99 : 0;
   const total = subtotal + shipping;
 
-  /* ================= VALIDATIONS ================= */
+  /* ================= VALIDATION ================= */
   const addressValid =
     address.fullName &&
     address.phone &&
@@ -53,7 +53,7 @@ export default function Checkout() {
     address.state &&
     address.pincode;
 
-  const upiValid = upiId && upiId.includes("@");
+  const upiValid = upiId.includes("@");
 
   const cardValid =
     card.number.replace(/\s/g, "").length === 16 &&
@@ -66,7 +66,7 @@ export default function Checkout() {
     (paymentMethod === "UPI" && upiValid) ||
     (paymentMethod === "CARD" && cardValid);
 
-  /* ================= HELPERS ================= */
+  /* ================= FORMATTERS ================= */
   const formatCardNumber = (v) =>
     v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
 
@@ -80,23 +80,30 @@ export default function Checkout() {
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error("Please login to place order");
+      navigate("/login");
       return;
     }
 
     try {
       setLoading(true);
+
       const order = await placeOrder(
         cartItems,
         total,
         address,
         paymentMethod
       );
+
       clearCart();
       toast.success("Order placed successfully");
-      navigate("/order-success", {
-        state: { orderId: order.id },
-        replace: true,
-      });
+
+      // 🔥 Mobile-safe navigation
+      setTimeout(() => {
+        navigate("/order-success", {
+          state: { orderId: order.id },
+          replace: true,
+        });
+      }, 100);
     } catch {
       toast.error("Order failed");
     } finally {
@@ -130,7 +137,7 @@ export default function Checkout() {
           {/* ================= LEFT ================= */}
           <div className="md:col-span-2 space-y-6">
 
-            {/* STEP 1 */}
+            {/* STEP 1 – ADDRESS */}
             {step === 1 && (
               <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow">
                 <h2 className="font-semibold mb-6">Delivery Address</h2>
@@ -186,9 +193,10 @@ export default function Checkout() {
 
                 <div className="flex justify-end mt-6">
                   <button
+                    type="button"
                     disabled={!addressValid}
                     onClick={() => setStep(2)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
                   >
                     Continue
                   </button>
@@ -196,13 +204,12 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* STEP 2 */}
+            {/* STEP 2 – PAYMENT */}
             {step === 2 && (
               <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow">
                 <h2 className="font-semibold mb-6">Payment Method</h2>
 
-                {/* COD */}
-                <label className="block border rounded-xl p-4 mb-4 cursor-pointer">
+                <label className="block border rounded-xl p-4 mb-4">
                   <input
                     type="radio"
                     checked={paymentMethod === "COD"}
@@ -211,15 +218,13 @@ export default function Checkout() {
                   Cash on Delivery
                 </label>
 
-                {/* UPI */}
-                <label className="block border rounded-xl p-4 mb-4 cursor-pointer">
+                <label className="block border rounded-xl p-4 mb-4">
                   <input
                     type="radio"
                     checked={paymentMethod === "UPI"}
                     onChange={() => setPaymentMethod("UPI")}
                   />{" "}
-                  UPI (Demo)
-
+                  UPI
                   {paymentMethod === "UPI" && (
                     <input
                       className="checkout-input mt-4"
@@ -230,15 +235,13 @@ export default function Checkout() {
                   )}
                 </label>
 
-                {/* CARD */}
-                <label className="block border rounded-xl p-4 cursor-pointer">
+                <label className="block border rounded-xl p-4">
                   <input
                     type="radio"
                     checked={paymentMethod === "CARD"}
                     onChange={() => setPaymentMethod("CARD")}
                   />{" "}
-                  Credit / Debit Card
-
+                  Card
                   {paymentMethod === "CARD" && (
                     <div className="grid md:grid-cols-2 gap-4 mt-4">
                       <input
@@ -288,16 +291,14 @@ export default function Checkout() {
                 </label>
 
                 <div className="flex justify-between mt-6">
-                  <button
-                    onClick={() => setStep(1)}
-                    className="px-4 py-2 border rounded"
-                  >
+                  <button type="button" onClick={() => setStep(1)}>
                     Back
                   </button>
                   <button
+                    type="button"
                     disabled={!paymentValid}
                     onClick={() => setStep(3)}
-                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:bg-gray-400"
                   >
                     Continue
                   </button>
@@ -305,7 +306,7 @@ export default function Checkout() {
               </div>
             )}
 
-            {/* STEP 3 */}
+            {/* STEP 3 – REVIEW */}
             {step === 3 && (
               <div className="bg-white dark:bg-slate-900 rounded-xl p-6 shadow">
                 <h2 className="font-semibold mb-4">Review Order</h2>
@@ -323,16 +324,14 @@ export default function Checkout() {
                 ))}
 
                 <div className="flex justify-between mt-6">
-                  <button
-                    onClick={() => setStep(2)}
-                    className="px-4 py-2 border rounded"
-                  >
+                  <button type="button" onClick={() => setStep(2)}>
                     Back
                   </button>
                   <button
+                    type="button"
                     onClick={handlePlaceOrder}
                     disabled={loading}
-                    className="px-6 py-2 bg-green-600 text-white rounded disabled:opacity-60"
+                    className="px-6 py-2 bg-green-600 text-white rounded active:scale-95 touch-manipulation"
                   >
                     {loading ? "Placing Order..." : "Place Order"}
                   </button>

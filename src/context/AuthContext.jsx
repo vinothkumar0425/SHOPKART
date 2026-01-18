@@ -39,11 +39,10 @@ export function AuthProvider({ children }) {
       }
       setAuthLoading(false);
     });
-
     return () => unsub();
   }, []);
 
-  /* ================= HANDLE GOOGLE REDIRECT ================= */
+  /* ================= GOOGLE REDIRECT RESULT ================= */
   useEffect(() => {
     getRedirectResult(auth)
       .then((result) => {
@@ -71,9 +70,9 @@ export function AuthProvider({ children }) {
       /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     if (isMobile) {
-      return signInWithRedirect(auth, googleProvider); // ✅ MOBILE
+      return signInWithRedirect(auth, googleProvider); // 📱 MOBILE
     }
-    return signInWithPopup(auth, googleProvider); // ✅ DESKTOP
+    return signInWithPopup(auth, googleProvider); // 💻 DESKTOP
   };
 
   /* ================= LOGOUT ================= */
@@ -95,11 +94,8 @@ export function AuthProvider({ children }) {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
-        <div className="flex items-center gap-4 bg-white dark:bg-slate-900 px-6 py-4 rounded-2xl shadow-lg">
-          <div className="w-6 h-6 border-4 border-gray-300 border-t-black dark:border-t-white rounded-full animate-spin" />
-          <p className="font-medium">Checking authentication…</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        Loading…
       </div>
     );
   }
