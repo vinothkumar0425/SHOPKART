@@ -11,22 +11,24 @@ import {
   signOut,
   sendPasswordResetEmail,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
 } from "firebase/auth";
 
-import { auth, googleProvider } from "../firebase";
+import { auth } from "../firebase";
 
 export const AuthContext = createContext();
 
-/* =====================================================
-   AUTH PROVIDER
-===================================================== */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  /* ================= AUTH STATE LISTENER ================= */
+  const googleProvider = new GoogleAuthProvider();
+
+  /* ================= AUTH STATE ================= */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         setUser({
           uid: firebaseUser.uid,
@@ -38,35 +40,49 @@ export function AuthProvider({ children }) {
       setAuthLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsub();
+  }, []);
+
+  /* ================= HANDLE GOOGLE REDIRECT ================= */
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          setUser({
+            uid: result.user.uid,
+            email: result.user.email,
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   /* ================= EMAIL LOGIN ================= */
-  const login = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
-  };
+  const login = (email, password) =>
+    signInWithEmailAndPassword(auth, email, password);
 
   /* ================= REGISTER ================= */
-  const register = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
-  };
+  const register = (email, password) =>
+    createUserWithEmailAndPassword(auth, email, password);
 
   /* ================= GOOGLE LOGIN ================= */
   const loginWithGoogle = () => {
-    return signInWithPopup(auth, googleProvider);
+    const isMobile =
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      return signInWithRedirect(auth, googleProvider); // ✅ MOBILE
+    }
+    return signInWithPopup(auth, googleProvider); // ✅ DESKTOP
   };
 
   /* ================= LOGOUT ================= */
-  const logout = () => {
-    return signOut(auth);
-  };
+  const logout = () => signOut(auth);
 
-  /* ================= FORGOT PASSWORD ================= */
-  const resetPassword = (email) => {
-    return sendPasswordResetEmail(auth, email);
-  };
+  /* ================= RESET PASSWORD ================= */
+  const resetPassword = (email) =>
+    sendPasswordResetEmail(auth, email);
 
-  /* ================= CONTEXT VALUE ================= */
   const value = {
     user,
     authLoading,
@@ -77,7 +93,6 @@ export function AuthProvider({ children }) {
     resetPassword,
   };
 
-  /* ================= LOADING STATE ================= */
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
@@ -96,7 +111,4 @@ export function AuthProvider({ children }) {
   );
 }
 
-/* =====================================================
-   CUSTOM HOOK (OPTIONAL BUT CLEAN)
-===================================================== */
 export const useAuth = () => useContext(AuthContext);

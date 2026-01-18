@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -20,6 +20,7 @@ import { db } from "../firebase";
 
 export default function ProductDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const { addToCart, cartItems } = useContext(CartContext);
   const { toggleWishlist, wishlist } = useContext(WishlistContext);
@@ -53,7 +54,7 @@ export default function ProductDetails() {
     fetchReviews();
   }, [id]);
 
-  if (!product) return <div className="p-10">Loading...</div>;
+  if (!product) return <div className="p-10 text-center">Loading...</div>;
 
   const inCart = cartItems.some((i) => i.id === product.id);
   const inWishlist = wishlist.some((i) => i.id === product.id);
@@ -64,12 +65,30 @@ export default function ProductDetails() {
         reviews.length
       : 0;
 
+  /* ================= LOGIN GUARD ================= */
+  const requireLogin = () => {
+    toast.error("Please login to continue");
+    navigate("/login");
+  };
+
+  /* ================= ACTIONS ================= */
+  const handleAddToCart = () => {
+    if (!user) return requireLogin();
+    if (inCart) return toast("Already in cart");
+    addToCart(product);
+    toast.success("Added to cart");
+  };
+
+  const handleWishlist = () => {
+    if (!user) return requireLogin();
+    if (inWishlist) return toast("Already in wishlist");
+    toggleWishlist(product);
+    toast.success("Added to wishlist");
+  };
+
   /* ================= SUBMIT REVIEW ================= */
   const submitReview = async () => {
-    if (!user) {
-      toast.error("Please login to submit review");
-      return;
-    }
+    if (!user) return requireLogin();
 
     if (!userRating || !comment.trim()) {
       toast.error("Please give rating and review");
@@ -117,13 +136,12 @@ export default function ProductDetails() {
   };
 
   return (
-    /* 🔹 Page wrapper – NO background (global body handles dark bg) */
-    <div className="max-w-6xl mx-auto px-6 py-10 bg-transparent">
+    <div className="max-w-6xl mx-auto px-6 py-10">
 
-      {/* 🔹 Main Card */}
-      <div className="bg-white dark:bg-slate-900/95 backdrop-blur rounded-2xl p-8 shadow-xl">
+      {/* ================= MAIN CARD ================= */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 shadow-xl">
 
-        {/* ================= PRODUCT ================= */}
+        {/* PRODUCT */}
         <div className="grid md:grid-cols-2 gap-10">
           <img
             src={product.image}
@@ -132,7 +150,7 @@ export default function ProductDetails() {
           />
 
           <div>
-            <h1 className="text-2xl font-bold mb-2">
+            <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
               {product.name}
             </h1>
 
@@ -143,7 +161,7 @@ export default function ProductDetails() {
               </span>
             </div>
 
-            <p className="text-2xl font-semibold mb-4">
+            <p className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
               ₹ {product.price}
             </p>
 
@@ -153,35 +171,24 @@ export default function ProductDetails() {
 
             <div className="flex gap-4">
               <button
+                onClick={handleAddToCart}
                 disabled={inCart}
-                onClick={() => {
-                  if (inCart) {
-                    toast("Already in cart");
-                    return;
-                  }
-                  addToCart(product);
-                  toast.success("Added to cart");
-                }}
-                className={`px-6 py-2 rounded-lg font-medium transition ${
-                  inCart
-                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                    : "bg-black text-white hover:opacity-90"
-                }`}
+                className={`px-6 py-2 rounded-lg font-medium transition
+                  ${
+                    inCart
+                      ? "bg-gray-300 text-gray-600 dark:bg-slate-700 dark:text-gray-400"
+                      : "bg-black text-white hover:opacity-90"
+                  }`}
               >
                 {inCart ? "In Cart" : "Add to Cart"}
               </button>
 
               <button
-                onClick={() => {
-                  toggleWishlist(product);
-                  toast.success(
-                    inWishlist
-                      ? "Removed from wishlist"
-                      : "Added to wishlist"
-                  );
-                }}
+                onClick={handleWishlist}
                 className={`text-2xl transition ${
-                  inWishlist ? "text-red-500" : "text-gray-400"
+                  inWishlist
+                    ? "text-red-500"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
               >
                 ♥
@@ -197,51 +204,55 @@ export default function ProductDetails() {
           </div>
         </div>
 
-        {/* Divider */}
+        {/* ================= REVIEWS ================= */}
         <hr className="my-10 border-gray-200 dark:border-slate-700" />
 
-        {/* ================= REVIEWS ================= */}
-        <div>
-          <h2 className="text-xl font-bold mb-6">
-            Customer Reviews
-          </h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+          Customer Reviews
+        </h2>
 
-          {/* ADD REVIEW */}
-          <div className="bg-gray-50 dark:bg-slate-800/80 p-6 rounded-xl mb-8">
-            <Rating value={userRating} onChange={setUserRating} />
+        {/* ADD REVIEW CARD */}
+        <div className="bg-gray-50 dark:bg-slate-800 p-6 rounded-xl mb-8">
+          <Rating value={userRating} onChange={setUserRating} />
 
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Share your experience..."
-              className="mt-4 w-full p-3 rounded-lg border dark:bg-slate-900 dark:border-slate-700"
-            />
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Share your experience..."
+            className="
+              mt-4 w-full p-3 rounded-lg border
+              bg-white text-gray-900
+              dark:bg-slate-900 dark:text-gray-100 dark:border-slate-700
+            "
+          />
 
-            <button
-              onClick={submitReview}
-              disabled={loadingReview}
-              className="mt-4 bg-black text-white px-6 py-2 rounded-lg"
+          <button
+            onClick={submitReview}
+            disabled={loadingReview}
+            className="mt-4 bg-black text-white px-6 py-2 rounded-lg hover:opacity-90"
+          >
+            {loadingReview ? "Submitting..." : "Submit Review"}
+          </button>
+        </div>
+
+        {/* REVIEW LIST */}
+        <div className="space-y-6">
+          {reviews.map((r) => (
+            <div
+              key={r.id}
+              className="border-b border-gray-200 dark:border-slate-700 pb-4"
             >
-              {loadingReview ? "Submitting..." : "Submit Review"}
-            </button>
-          </div>
-
-          {/* REVIEW LIST */}
-          <div className="space-y-6">
-            {reviews.map((r) => (
-              <div key={r.id} className="border-b pb-4 dark:border-slate-700">
-                <div className="flex justify-between mb-1">
-                  <p className="font-semibold">
-                    {r.userName || "Anonymous User"}
-                  </p>
-                  <Rating value={r.rating} readOnly />
-                </div>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {r.comment}
+              <div className="flex justify-between mb-1">
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  {r.userName || "Anonymous User"}
                 </p>
+                <Rating value={r.rating} readOnly />
               </div>
-            ))}
-          </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                {r.comment}
+              </p>
+            </div>
+          ))}
         </div>
 
       </div>

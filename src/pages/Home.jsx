@@ -63,16 +63,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#020617] relative z-0">
 
-      {/* ================= HERO (z-0 so toast always on top) ================= */}
+      {/* ================= HERO ================= */}
       <div className="relative overflow-hidden bg-[#0f172a] text-white z-0">
-
-        {/* Glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-24 -left-24 w-96 h-96 bg-blue-600 rounded-full blur-3xl opacity-40" />
-          <div className="absolute top-20 right-0 w-96 h-96 bg-purple-600 rounded-full blur-3xl opacity-40" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 py-20 grid md:grid-cols-2 gap-12 items-center z-0">
+        <div className="relative max-w-7xl mx-auto px-4 py-20 grid md:grid-cols-2 gap-12 items-center">
 
           {/* LEFT */}
           <div>
@@ -107,15 +100,9 @@ export default function Home() {
                 Explore →
               </button>
             </div>
-
-            <div className="flex flex-wrap gap-6 mt-10 text-sm text-gray-400">
-              <span>✔ Secure Payments</span>
-              <span>✔ Trusted Products</span>
-              <span>✔ Fast Delivery</span>
-            </div>
           </div>
 
-          {/* RIGHT – PARALLAX IMAGE */}
+          {/* RIGHT */}
           <div
             className="relative hidden md:block"
             onMouseMove={handleMouseMove}
@@ -128,9 +115,6 @@ export default function Home() {
                 alt="Featured Product"
                 className="h-80 mx-auto object-contain transition-transform duration-300 ease-out"
               />
-              <p className="text-center mt-6 text-sm text-gray-300">
-                Experience smooth, premium interaction
-              </p>
             </div>
           </div>
 
@@ -141,7 +125,7 @@ export default function Home() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-12">
 
         {/* SEARCH + SORT */}
-        <div className="backdrop-blur-xl bg-white/80 dark:bg-[#0f172a]/80 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-5 flex flex-col md:flex-row gap-4 items-center justify-between mb-12">
+        <div className="bg-white dark:bg-[#0f172a] border rounded-2xl shadow-lg p-5 flex flex-col md:flex-row gap-4 items-center justify-between mb-12">
           <div className="w-full md:w-2/3">
             <SearchBar value={search} onChange={setSearch} />
           </div>
@@ -149,7 +133,7 @@ export default function Home() {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value)}
-            className="w-full md:w-60 px-4 py-3 rounded-xl border dark:bg-[#020617] dark:border-gray-700 focus:ring-2 focus:ring-blue-500 transition"
+            className="w-full md:w-60 px-4 py-3 rounded-xl border dark:bg-[#020617]"
           >
             <option value="">Sort by</option>
             <option value="low">Price: Low to High</option>
@@ -157,15 +141,15 @@ export default function Home() {
           </select>
         </div>
 
-        {/* PRODUCTS */}
+        {/* PRODUCTS (✅ 2 COLUMN FIX) */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <ProductSkeleton key={i} />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {sortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
